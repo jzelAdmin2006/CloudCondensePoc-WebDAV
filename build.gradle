@@ -21,6 +21,7 @@ dependencies {
 	implementation('com.github.lookfirst:sardine:5.12') {
     	exclude group: 'org.slf4j', module: 'slf4j-simple'
 	}
+	implementation 'com.squareup.okhttp3:okhttp:4.11.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

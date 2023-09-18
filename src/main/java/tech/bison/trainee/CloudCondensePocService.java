@@ -17,6 +17,7 @@ import com.github.sardine.DavResource;
 import com.github.sardine.Sardine;
 import com.github.sardine.SardineFactory;
 
+import okhttp3.HttpUrl;
 import tech.bison.trainee.config.ArchiveConfig;
 import tech.bison.trainee.config.WebDavConfig;
 
@@ -59,7 +60,11 @@ public class CloudCondensePocService {
           .atZone(ZoneId.systemDefault())
           .toLocalDateTime()
           .isBefore(LocalDateTime.now().minusDays(days))) {
-        final String resourceUrl = webDavConfig.getUrl() + "/" + resource.getName();
+        final String resourceUrl = HttpUrl.parse(webDavConfig.getUrl())
+            .newBuilder()
+            .addPathSegment(resource.getName())
+            .build()
+            .toString();
         try (InputStream is = sardine.get(resourceUrl)) {
           final File targetFile = new File(destDir, resource.getName());
           FileUtils.copyInputStreamToFile(is, targetFile);
