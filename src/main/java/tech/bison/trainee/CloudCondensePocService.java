@@ -45,19 +45,19 @@ public class CloudCondensePocService {
   }
 
   private void archiveDataOlderThanDays(int days) throws IOException {
-    Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
-    List<DavResource> resources = sardine.list(webDavConfig.getUrl());
+    final Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
+    final List<DavResource> resources = sardine.list(webDavConfig.getUrl());
 
-    File destDir = new File(archiveConfig.getTmpWorkDir());
+    final File destDir = new File(archiveConfig.getTmpWorkDir());
     for (DavResource resource : resources) {
       if (resource.getModified()
           .toInstant()
           .atZone(ZoneId.systemDefault())
           .toLocalDateTime()
           .isBefore(LocalDateTime.now().minusDays(days))) {
-        String resourceUrl = webDavConfig.getUrl() + "/" + resource.getName();
+        final String resourceUrl = webDavConfig.getUrl() + "/" + resource.getName();
         try (InputStream is = sardine.get(resourceUrl)) {
-          File targetFile = new File(destDir, resource.getName());
+          final File targetFile = new File(destDir, resource.getName());
           FileUtils.copyInputStreamToFile(is, targetFile);
         }
       }
