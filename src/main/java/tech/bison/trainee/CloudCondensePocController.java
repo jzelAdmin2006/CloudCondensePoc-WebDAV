@@ -7,16 +7,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CloudCondensePocController {
+  private final CloudCondensePocService cloudCondensePocService;
+
+  public CloudCondensePocController(CloudCondensePocService cloudCondensePocService) {
+    this.cloudCondensePocService = cloudCondensePocService;
+  }
+
   @PostMapping("/archive")
   public ResponseEntity<String> backupRepos(@RequestBody String archiveAgeStr) {
     int archiveAge = Integer.parseInt(archiveAgeStr);
-    try {
-      CloudCondensePocService.getArchiveRequests().add(archiveAge);
-      return ResponseEntity.status(202).body("Archive creation queued");
-    } catch (Exception e) {
-      System.err.println("Error creating queue");
-      e.printStackTrace();
-      return ResponseEntity.status(500).body("Error creating queue:\n" + e.getStackTrace());
-    }
+    cloudCondensePocService.addArchiveRequestAndProcess(archiveAge);
+    return ResponseEntity.status(202).body("Archive creation queued");
   }
 }

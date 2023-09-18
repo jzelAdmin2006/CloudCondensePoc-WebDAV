@@ -12,12 +12,9 @@ import java.time.ZoneId;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.github.sardine.DavResource;
@@ -26,28 +23,41 @@ import com.github.sardine.SardineFactory;
 
 @Service
 public class CloudCondensePocService {
-  private final Lock lock = new ReentrantLock();
-  private static final Queue<Integer> archiveRequests = new LinkedList<>();
 
-  @Scheduled(fixedRate = 5000)
-  public void checkArchiveCreationRequest() {
-    if (archiveRequests.size() >= 1 && lock.tryLock()) {
-      archiveOldData();
+  private final ExecutorService archiveExecutor;
+  private final Queue<Integer> archiveRequests = new LinkedList<>();
+
+  public CloudCondensePocService(ExecutorService archiveExecutor) {
+    this.archiveExecutor = archiveExecutor;
+  }
+
+
+  public void addArchiveRequestAndProcess(Integer archiveDayAge) {
+    synchronized (archiveRequests) {
+      archiveRequests.add(archiveDayAge);
+      processArchiveRequests();
     }
   }
 
-  @Async
-  public void archiveOldData() {
-    int archiveDataDayAge = archiveRequests.poll();
-    try {
-      archiveDataOlderThanDays(archiveDataDayAge);
-      System.out.println(String.format("Data older than %s days archived.", archiveDataDayAge));
-    } catch (IOException e) {
-      System.out.println(String.format("Archiving failed.", archiveDataDayAge));
-      e.printStackTrace();
-    } finally {
-      lock.unlock();
+  public void processArchiveRequests() {
+    Integer archiveDataDayAge;
+
+    synchronized (archiveRequests) {
+      archiveDataDayAge = archiveRequests.poll();
     }
+
+    if (archiveDataDayAge == null)
+      return;
+
+    archiveExecutor.submit(() -> {
+      try {
+        archiveDataOlderThanDays(archiveDataDayAge);
+        System.out.println(String.format("Data older than %s days archived.", archiveDataDayAge));
+      } catch (IOException e) {
+        System.out.println("Archiving failed.");
+        e.printStackTrace();
+      }
+    });
   }
 
   private void archiveDataOlderThanDays(int days) throws IOException {
@@ -68,9 +78,5 @@ public class CloudCondensePocService {
         }
       }
     }
-  }
-
-  static Queue<Integer> getArchiveRequests() {
-    return archiveRequests;
   }
 }
