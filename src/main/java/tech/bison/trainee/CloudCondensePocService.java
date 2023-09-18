@@ -36,7 +36,7 @@ public class CloudCondensePocService {
     archiveExecutor.submit(() -> {
       try {
         archiveDataOlderThanDays(archiveDayAge);
-        System.out.println(String.format("Data older than %s days archived.", archiveDayAge));
+        System.out.println("Data older than %s days archived.".formatted(archiveDayAge));
       } catch (IOException e) {
         System.out.println("Archiving failed.");
         e.printStackTrace();
