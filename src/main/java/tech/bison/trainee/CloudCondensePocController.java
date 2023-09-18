@@ -15,8 +15,7 @@ public class CloudCondensePocController {
 
   @PostMapping("/archive")
   public ResponseEntity<String> backupRepos(@RequestBody String archiveAgeStr) {
-    int archiveAge = Integer.parseInt(archiveAgeStr);
-    cloudCondensePocService.archiveDataByRequest(archiveAge);
+    cloudCondensePocService.archiveDataByRequest(Integer.parseInt(archiveAgeStr));
     return ResponseEntity.status(202).body("Archive creation queued");
   }
 }
