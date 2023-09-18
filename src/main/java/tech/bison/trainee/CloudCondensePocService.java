@@ -9,9 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.io.FileUtils;
@@ -23,36 +21,17 @@ import com.github.sardine.SardineFactory;
 
 @Service
 public class CloudCondensePocService {
-
   private final ExecutorService archiveExecutor;
-  private final Queue<Integer> archiveRequests = new LinkedList<>();
 
   public CloudCondensePocService(ExecutorService archiveExecutor) {
     this.archiveExecutor = archiveExecutor;
   }
 
-
-  public void addArchiveRequestAndProcess(Integer archiveDayAge) {
-    synchronized (archiveRequests) {
-      archiveRequests.add(archiveDayAge);
-      processArchiveRequests();
-    }
-  }
-
-  public void processArchiveRequests() {
-    Integer archiveDataDayAge;
-
-    synchronized (archiveRequests) {
-      archiveDataDayAge = archiveRequests.poll();
-    }
-
-    if (archiveDataDayAge == null)
-      return;
-
+  public void archiveDataByRequest(int archiveDayAge) {
     archiveExecutor.submit(() -> {
       try {
-        archiveDataOlderThanDays(archiveDataDayAge);
-        System.out.println(String.format("Data older than %s days archived.", archiveDataDayAge));
+        archiveDataOlderThanDays(archiveDayAge);
+        System.out.println(String.format("Data older than %s days archived.", archiveDayAge));
       } catch (IOException e) {
         System.out.println("Archiving failed.");
         e.printStackTrace();
