@@ -1,5 +1,6 @@
 package tech.bison.trainee;
 
+import static tech.bison.trainee.CloudCondensePocApplication.TMP_ARCHIVE_WORK_DIR;
 import static tech.bison.trainee.CloudCondensePocApplication.WEBDAV_PASSWORD;
 import static tech.bison.trainee.CloudCondensePocApplication.WEBDAV_URL;
 import static tech.bison.trainee.CloudCondensePocApplication.WEBDAV_USERNAME;
@@ -43,7 +44,7 @@ public class CloudCondensePocService {
     Sardine sardine = SardineFactory.begin(WEBDAV_USERNAME, WEBDAV_PASSWORD);
     List<DavResource> resources = sardine.list(WEBDAV_URL);
 
-    File destDir = new File("C:/tmp");
+    File destDir = new File(TMP_ARCHIVE_WORK_DIR);
     for (DavResource resource : resources) {
       if (resource.getModified()
           .toInstant()
