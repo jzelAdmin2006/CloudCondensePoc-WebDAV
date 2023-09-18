@@ -1,4 +1,4 @@
-package tech.bison.trainee;
+package tech.bison.trainee.config;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

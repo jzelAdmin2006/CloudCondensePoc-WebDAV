@@ -1,0 +1,22 @@
+{"properties": [
+  {
+    "name": "webdav.url",
+    "type": "java.lang.String",
+    "description": "The URL of the WebDAV server"
+  },
+  {
+    "name": "webdav.username",
+    "type": "java.lang.String",
+    "description": "The user to use to connect to the WebDAV server"
+  },
+  {
+    "name": "webdav.password",
+    "type": "java.lang.String",
+    "description": "The password to use to connect to the WebDAV server"
+  },
+  {
+    "name": "archive.tmpworkdir",
+    "type": "java.lang.String",
+    "description": "The directory to use to store temporary files for downloading and archiving"
+  }
+]}
