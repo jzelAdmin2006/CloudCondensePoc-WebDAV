@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import tech.bison.trainee.config.WebDavConfig;
 
 @Service
 public class CloudCondensePocService {
+  private static final Logger LOGGER = Logger.getLogger(CloudCondensePocService.class.getName());
+
   private final ExecutorService archiveExecutor;
 
   private final WebDavConfig webDavConfig;
@@ -36,9 +40,9 @@ public class CloudCondensePocService {
     archiveExecutor.submit(() -> {
       try {
         archiveDataOlderThanDays(archiveDayAge);
-        System.out.println("Data older than %s days archived.".formatted(archiveDayAge));
+        LOGGER.log(Level.INFO, "Data older than %s days archived.".formatted(archiveDayAge));
       } catch (IOException e) {
-        System.out.println("Archiving failed.");
+        LOGGER.log(Level.SEVERE, "Archiving failed.");
         e.printStackTrace();
       }
     });
