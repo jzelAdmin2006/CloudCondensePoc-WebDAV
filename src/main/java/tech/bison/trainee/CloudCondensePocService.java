@@ -3,9 +3,6 @@ package tech.bison.trainee;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
 
-import com.github.sardine.DavResource;
-import com.github.sardine.Sardine;
-import com.github.sardine.SardineFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,8 +13,14 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import okhttp3.HttpUrl;
+
 import org.springframework.stereotype.Service;
+
+import com.github.sardine.DavResource;
+import com.github.sardine.Sardine;
+import com.github.sardine.SardineFactory;
+
+import okhttp3.HttpUrl;
 import tech.bison.trainee.config.ArchiveConfig;
 import tech.bison.trainee.config.WebDavConfig;
 
@@ -51,7 +54,8 @@ public class CloudCondensePocService {
 
   private void archiveDataOlderThanDays(int days) throws IOException {
     final Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
-    final List<DavResource> resources = sardine.list(webDavConfig.getUrl()).stream()
+    final List<DavResource> resources = sardine.list(webDavConfig.getUrl())
+        .stream()
         .sorted(Comparator.comparingInt(r -> r.getPath().length()))
         .skip(1)
         .toList();
@@ -71,8 +75,7 @@ public class CloudCondensePocService {
   }
 
   private String toUrl(DavResource resource) {
-    return requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid")
-        .newBuilder()
+    return requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid").newBuilder()
         .addPathSegment(resource.getName())
         .build()
         .toString();
