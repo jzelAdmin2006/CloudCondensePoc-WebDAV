@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -51,7 +52,11 @@ public class CloudCondensePocService {
 
   private void archiveDataOlderThanDays(int days) throws IOException {
     final Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
-    final List<DavResource> resources = sardine.list(webDavConfig.getUrl());
+    final List<DavResource> resources = sardine.list(webDavConfig.getUrl()).stream()
+        .sorted(Comparator.comparingInt(r -> r.getPath().length()))
+        .skip(1)
+        .toList();
+
 
     final File destDir = new File(archiveConfig.getTmpWorkDir());
     for (DavResource resource : resources) {
