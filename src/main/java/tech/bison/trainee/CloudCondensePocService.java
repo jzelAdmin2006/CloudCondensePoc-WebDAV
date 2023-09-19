@@ -2,6 +2,7 @@ package tech.bison.trainee;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
+import static tech.bison.util.sevenzip.SevenZip.SEVEN_ZIP_FILE_ENDING;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import com.github.sardine.SardineFactory;
 import okhttp3.HttpUrl;
 import tech.bison.trainee.config.ArchiveConfig;
 import tech.bison.trainee.config.WebDavConfig;
+import tech.bison.util.sevenzip.SevenZip;
 
 @Service
 public class CloudCondensePocService {
@@ -66,11 +68,17 @@ public class CloudCondensePocService {
           .atZone(ZoneId.systemDefault())
           .toLocalDateTime()
           .isBefore(LocalDateTime.now().minusDays(days))) {
-        try (InputStream is = sardine.get(toUrl(resource))) {
-          final File targetFile = new File(new File(archiveConfig.getTmpWorkDir()), resource.getName());
-          copyInputStreamToFile(is, targetFile);
-        }
+        archive(sardine, resource);
       }
+    }
+  }
+
+  private void archive(final Sardine sardine, DavResource resource) throws IOException {
+    try (InputStream is = sardine.get(toUrl(resource))) {
+      final File target = new File(new File(archiveConfig.getTmpWorkDir()), resource.getName());
+      copyInputStreamToFile(is, target);
+      final File archive = new File(archiveConfig.getTmpWorkDir(), target.getName() + SEVEN_ZIP_FILE_ENDING);
+      new SevenZip().compress(target, archive);
     }
   }
 
