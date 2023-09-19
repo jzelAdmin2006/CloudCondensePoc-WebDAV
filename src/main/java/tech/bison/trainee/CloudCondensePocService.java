@@ -1,5 +1,7 @@
 package tech.bison.trainee;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,7 +67,7 @@ public class CloudCondensePocService {
           .atZone(ZoneId.systemDefault())
           .toLocalDateTime()
           .isBefore(LocalDateTime.now().minusDays(days))) {
-        final String resourceUrl = HttpUrl.parse(webDavConfig.getUrl())
+        final String resourceUrl = requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid")
             .newBuilder()
             .addPathSegment(resource.getName())
             .build()
