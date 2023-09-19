@@ -1,5 +1,6 @@
 package tech.bison.trainee;
 
+import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -60,7 +60,7 @@ public class CloudCondensePocService {
     final Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
     final List<DavResource> resources = sardine.list(webDavConfig.getUrl())
         .stream()
-        .sorted(Comparator.comparingInt(r -> r.getPath().length()))
+        .sorted(comparingInt(r -> r.getPath().length()))
         .skip(1)
         .toList();
 
