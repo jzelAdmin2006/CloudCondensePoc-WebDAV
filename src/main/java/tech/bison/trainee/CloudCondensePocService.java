@@ -62,6 +62,7 @@ public class CloudCondensePocService {
         .stream()
         .sorted(comparingInt(r -> r.getPath().length()))
         .skip(1)
+        .filter(r -> !r.getName().endsWith(SEVEN_ZIP_FILE_ENDING))
         .toList();
 
     for (DavResource resource : resources) {
