@@ -32,3 +32,8 @@ configurations {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+bootJar {
+    archiveBaseName = 'app'
+    archiveVersion = ''
+}
