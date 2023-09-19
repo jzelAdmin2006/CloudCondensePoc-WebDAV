@@ -1,10 +1,12 @@
 package tech.bison.trainee;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
 import static tech.bison.util.sevenzip.SevenZip.SEVEN_ZIP_FILE_ENDING;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -74,11 +76,20 @@ public class CloudCondensePocService {
   }
 
   private void archive(final Sardine sardine, DavResource resource) throws IOException {
-    try (InputStream is = sardine.get(toUrl(resource))) {
-      final File target = new File(new File(archiveConfig.getTmpWorkDir()), resource.getName());
-      copyInputStreamToFile(is, target);
+    final File tmpWorkDir = new File(archiveConfig.getTmpWorkDir());
+    try {
+      final File target = new File(tmpWorkDir, resource.getName());
+      try (InputStream is = sardine.get(toUrl(resource))) {
+        copyInputStreamToFile(is, target);
+      }
       final File archive = new File(archiveConfig.getTmpWorkDir(), target.getName() + SEVEN_ZIP_FILE_ENDING);
       new SevenZip().compress(target, archive);
+      try (InputStream is = new FileInputStream(archive)) {
+        sardine.put(toUrl(resource) + SEVEN_ZIP_FILE_ENDING, is);
+      }
+      sardine.delete(toUrl(resource));
+    } finally {
+      cleanDirectory(tmpWorkDir);
     }
   }
 
