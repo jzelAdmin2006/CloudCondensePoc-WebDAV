@@ -56,24 +56,25 @@ public class CloudCondensePocService {
         .skip(1)
         .toList();
 
-
-    final File destDir = new File(archiveConfig.getTmpWorkDir());
     for (DavResource resource : resources) {
       if (resource.getModified()
           .toInstant()
           .atZone(ZoneId.systemDefault())
           .toLocalDateTime()
           .isBefore(LocalDateTime.now().minusDays(days))) {
-        final String resourceUrl = requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid")
-            .newBuilder()
-            .addPathSegment(resource.getName())
-            .build()
-            .toString();
-        try (InputStream is = sardine.get(resourceUrl)) {
-          final File targetFile = new File(destDir, resource.getName());
+        try (InputStream is = sardine.get(toUrl(resource))) {
+          final File targetFile = new File(new File(archiveConfig.getTmpWorkDir()), resource.getName());
           copyInputStreamToFile(is, targetFile);
         }
       }
     }
+  }
+
+  private String toUrl(DavResource resource) {
+    return requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid")
+        .newBuilder()
+        .addPathSegment(resource.getName())
+        .build()
+        .toString();
   }
 }
