@@ -1,7 +1,11 @@
 package tech.bison.trainee;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
 
+import com.github.sardine.DavResource;
+import com.github.sardine.Sardine;
+import com.github.sardine.SardineFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,15 +16,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.apache.commons.io.FileUtils;
-import org.springframework.stereotype.Service;
-
-import com.github.sardine.DavResource;
-import com.github.sardine.Sardine;
-import com.github.sardine.SardineFactory;
-
 import okhttp3.HttpUrl;
+import org.springframework.stereotype.Service;
 import tech.bison.trainee.config.ArchiveConfig;
 import tech.bison.trainee.config.WebDavConfig;
 
@@ -74,7 +71,7 @@ public class CloudCondensePocService {
             .toString();
         try (InputStream is = sardine.get(resourceUrl)) {
           final File targetFile = new File(destDir, resource.getName());
-          FileUtils.copyInputStreamToFile(is, targetFile);
+          copyInputStreamToFile(is, targetFile);
         }
       }
     }
