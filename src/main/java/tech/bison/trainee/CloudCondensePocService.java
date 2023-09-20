@@ -108,7 +108,6 @@ public class CloudCondensePocService {
                 localTarget.mkdirs();
                 queue.addAll(sardine.list(toUrlNoTrailingSlash(childResource)));
               } else {
-                localTarget.getParentFile().mkdirs();
                 try (InputStream is = sardine.get(toUrlNoTrailingSlash(childResource))) {
                   copyInputStreamToFile(is, localTarget);
                 }
