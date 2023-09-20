@@ -8,6 +8,7 @@ import static tech.bison.util.sevenzip.SevenZip.SEVEN_ZIP_FILE_ENDING;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -77,7 +78,7 @@ public class CloudCondensePocService {
         .stream()
         .sorted(comparingInt(r -> r.getPath().length()))
         .skip(1)
-        .filter(r -> !r.getName().endsWith(SEVEN_ZIP_FILE_ENDING))
+        .filter(r -> isAlreadyArchived(r))
         .toList();
   }
 
@@ -92,13 +93,18 @@ public class CloudCondensePocService {
       }
       final File archive = new File(archiveConfig.getTmpWorkDir(), target.getName() + SEVEN_ZIP_FILE_ENDING);
       new SevenZip().compress(target, archive);
-      try (InputStream is = new FileInputStream(archive)) {
-        sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
-      }
-      sardine.delete(toUrl(resource));
+      replaceResource(sardine, resource, archive);
     } finally {
       cleanDirectory(tmpWorkDir);
     }
+  }
+
+  private void replaceResource(final Sardine sardine, DavResource resource, final File archive) throws IOException,
+                                                                                                FileNotFoundException {
+    try (InputStream is = new FileInputStream(archive)) {
+      sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
+    }
+    sardine.delete(toUrl(resource));
   }
 
   private void copyResourceToFolder(final Sardine sardine, DavResource resource, final File target) throws IOException {
@@ -112,21 +118,29 @@ public class CloudCondensePocService {
       final List<DavResource> childResources = listUnarchivedContent(sardine, toUrlNoTrailingSlash(currentResource));
 
       for (DavResource childResource : childResources) {
-        if (!childResource.getName().endsWith(SEVEN_ZIP_FILE_ENDING)) {
-          final String relativePath = childResource.getHref()
-              .getPath()
-              .substring(resource.getHref().getPath().length());
-          final File localTarget = new File(target, relativePath);
-
-          if (childResource.isDirectory()) {
-            localTarget.mkdirs();
-            queue.addAll(sardine.list(toUrlNoTrailingSlash(childResource)));
-          } else {
-            copyResourceToFile(sardine, childResource, localTarget);
-          }
-        }
+        processFolderCopyQueueItems(sardine, resource, target, queue, childResource);
       }
     }
+  }
+
+  private void processFolderCopyQueueItems(final Sardine sardine, DavResource resource, final File target,
+                                           final LinkedList<DavResource> queue,
+                                           DavResource childResource) throws IOException {
+    if (isAlreadyArchived(childResource)) {
+      final String relativePath = childResource.getHref().getPath().substring(resource.getHref().getPath().length());
+      final File localTarget = new File(target, relativePath);
+
+      if (childResource.isDirectory()) {
+        localTarget.mkdirs();
+        queue.addAll(sardine.list(toUrlNoTrailingSlash(childResource)));
+      } else {
+        copyResourceToFile(sardine, childResource, localTarget);
+      }
+    }
+  }
+
+  private boolean isAlreadyArchived(DavResource childResource) {
+    return !childResource.getName().endsWith(SEVEN_ZIP_FILE_ENDING);
   }
 
   private void copyResourceToFile(final Sardine sardine, DavResource resource, final File target) throws IOException {
