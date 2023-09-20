@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -58,12 +59,7 @@ public class CloudCondensePocService {
 
   private void archiveDataOlderThanDays(int days) throws IOException {
     final Sardine sardine = SardineFactory.begin(webDavConfig.getUsername(), webDavConfig.getPassword());
-    final List<DavResource> resources = sardine.list(webDavConfig.getUrl())
-        .stream()
-        .sorted(comparingInt(r -> r.getPath().length()))
-        .skip(1)
-        .filter(r -> !r.getName().endsWith(SEVEN_ZIP_FILE_ENDING))
-        .toList();
+    final List<DavResource> resources = listUnarchivedContent(sardine, webDavConfig.getUrl());
 
     for (DavResource resource : resources) {
       if (resource.getModified()
@@ -76,17 +72,59 @@ public class CloudCondensePocService {
     }
   }
 
+  private List<DavResource> listUnarchivedContent(final Sardine sardine, final String url) throws IOException {
+    return sardine.list(url)
+        .stream()
+        .sorted(comparingInt(r -> r.getPath().length()))
+        .skip(1)
+        .filter(r -> !r.getName().endsWith(SEVEN_ZIP_FILE_ENDING))
+        .toList();
+  }
+
   private void archive(final Sardine sardine, DavResource resource) throws IOException {
     final File tmpWorkDir = new File(archiveConfig.getTmpWorkDir());
+    final File target = new File(tmpWorkDir, resource.getName());
     try {
-      final File target = new File(tmpWorkDir, resource.getName());
-      try (InputStream is = sardine.get(toUrl(resource))) {
-        copyInputStreamToFile(is, target);
+      if (resource.isDirectory()) {
+        final File mainDir = new File(tmpWorkDir, resource.getName());
+        mainDir.mkdirs();
+
+        final LinkedList<DavResource> queue = new LinkedList<>();
+        queue.add(resource);
+
+        while (!queue.isEmpty()) {
+          final DavResource currentResource = queue.poll();
+          final List<DavResource> childResources = listUnarchivedContent(sardine,
+              toUrlNoTrailingSlash(currentResource));
+
+          for (DavResource childResource : childResources) {
+            if (!childResource.getName().endsWith(SEVEN_ZIP_FILE_ENDING)) {
+              final String relativePath = childResource.getHref()
+                  .getPath()
+                  .substring(resource.getHref().getPath().length());
+              final File localTarget = new File(mainDir, relativePath);
+
+              if (childResource.isDirectory()) {
+                localTarget.mkdirs();
+                queue.addAll(sardine.list(toUrlNoTrailingSlash(childResource)));
+              } else {
+                localTarget.getParentFile().mkdirs();
+                try (InputStream is = sardine.get(toUrlNoTrailingSlash(childResource))) {
+                  copyInputStreamToFile(is, localTarget);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        try (InputStream is = sardine.get(toUrlNoTrailingSlash(resource))) {
+          copyInputStreamToFile(is, target);
+        }
       }
       final File archive = new File(archiveConfig.getTmpWorkDir(), target.getName() + SEVEN_ZIP_FILE_ENDING);
       new SevenZip().compress(target, archive);
       try (InputStream is = new FileInputStream(archive)) {
-        sardine.put(toUrl(resource) + SEVEN_ZIP_FILE_ENDING, is);
+        sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
       }
       sardine.delete(toUrl(resource));
     } finally {
@@ -95,9 +133,16 @@ public class CloudCondensePocService {
   }
 
   private String toUrl(DavResource resource) {
-    return requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid").newBuilder()
-        .addPathSegment(resource.getName())
-        .build()
-        .toString();
+    final HttpUrl baseHttpUrl = requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid");
+    final String fullPath = resource.getHref().getPath();
+    return baseHttpUrl.resolve(fullPath).toString();
+  }
+
+  private String toUrlNoTrailingSlash(DavResource resource) {
+    String resolvedUrl = toUrl(resource);
+    if (resolvedUrl.endsWith("/")) {
+      resolvedUrl = resolvedUrl.substring(0, resolvedUrl.length() - 1);
+    }
+    return resolvedUrl;
   }
 }
