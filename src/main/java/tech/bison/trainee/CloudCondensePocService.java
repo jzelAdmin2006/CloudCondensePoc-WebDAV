@@ -78,7 +78,7 @@ public class CloudCondensePocService {
         .stream()
         .sorted(comparingInt(r -> r.getPath().length()))
         .skip(1)
-        .filter(r -> isAlreadyArchived(r))
+        .filter(this::isAlreadyArchived)
         .toList();
   }
 
