@@ -1,7 +1,6 @@
 package tech.bison.trainee;
 
 import static java.util.Comparator.comparingInt;
-import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
 import static tech.bison.util.sevenzip.SevenZip.SEVEN_ZIP_FILE_ENDING;
@@ -24,9 +23,9 @@ import com.github.sardine.DavResource;
 import com.github.sardine.Sardine;
 import com.github.sardine.SardineFactory;
 
-import okhttp3.HttpUrl;
 import tech.bison.trainee.config.ArchiveConfig;
 import tech.bison.trainee.config.WebDavConfig;
+import tech.bison.util.davresource.ResourceURL;
 import tech.bison.util.sevenzip.SevenZip;
 
 @Service
@@ -99,10 +98,11 @@ public class CloudCondensePocService {
   }
 
   private void replaceResource(final Sardine sardine, DavResource resource, final File archive) throws IOException {
+    final ResourceURL url = new ResourceURL(webDavConfig.getUrl(), resource);
     try (InputStream is = new FileInputStream(archive)) {
-      sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
+      sardine.put(url.toStringNoTrailingSlash() + SEVEN_ZIP_FILE_ENDING, is);
     }
-    sardine.delete(resource.isDirectory() ? toUrlTrailingSlash(resource) : toUrlNoTrailingSlash(resource));
+    sardine.delete(resource.isDirectory() ? url.toStringTrailingSlash() : url.toStringNoTrailingSlash());
   }
 
   private void copyResourceToFolder(final Sardine sardine, DavResource resource, final File target) throws IOException {
@@ -113,7 +113,8 @@ public class CloudCondensePocService {
 
     while (!queue.isEmpty()) {
       final DavResource currentResource = queue.poll();
-      final List<DavResource> childResources = listUnarchivedContent(sardine, toUrlNoTrailingSlash(currentResource));
+      final List<DavResource> childResources = listUnarchivedContent(sardine,
+          new ResourceURL(webDavConfig.getUrl(), currentResource).toStringNoTrailingSlash());
 
       for (DavResource childResource : childResources) {
         processFolderCopyQueueItems(sardine, resource, target, queue, childResource);
@@ -130,7 +131,7 @@ public class CloudCondensePocService {
 
       if (childResource.isDirectory()) {
         localTarget.mkdirs();
-        queue.addAll(sardine.list(toUrlNoTrailingSlash(childResource)));
+        queue.addAll(sardine.list(new ResourceURL(webDavConfig.getUrl(), childResource).toStringNoTrailingSlash()));
       } else {
         copyResourceToFile(sardine, childResource, localTarget);
       }
@@ -142,19 +143,8 @@ public class CloudCondensePocService {
   }
 
   private void copyResourceToFile(final Sardine sardine, DavResource resource, final File target) throws IOException {
-    try (InputStream is = sardine.get(toUrlNoTrailingSlash(resource))) {
+    try (InputStream is = sardine.get(new ResourceURL(webDavConfig.getUrl(), resource).toStringNoTrailingSlash())) {
       copyInputStreamToFile(is, target);
     }
-  }
-
-  private String toUrlNoTrailingSlash(DavResource resource) {
-    final HttpUrl baseHttpUrl = requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid");
-    final String fullPath = resource.getHref().getPath();
-    final String resolvedUrl = baseHttpUrl.resolve(fullPath).toString();
-    return resolvedUrl.endsWith("/") ? resolvedUrl.substring(0, resolvedUrl.length() - 1) : resolvedUrl;
-  }
-
-  private String toUrlTrailingSlash(DavResource resource) {
-    return toUrlNoTrailingSlash(resource) + "/";
   }
 }
