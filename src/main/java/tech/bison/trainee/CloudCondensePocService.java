@@ -102,7 +102,7 @@ public class CloudCondensePocService {
     try (InputStream is = new FileInputStream(archive)) {
       sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
     }
-    sardine.delete(toUrl(resource));
+    sardine.delete(resource.isDirectory() ? toUrlTrailingSlash(resource) : toUrlNoTrailingSlash(resource));
   }
 
   private void copyResourceToFolder(final Sardine sardine, DavResource resource, final File target) throws IOException {
@@ -147,17 +147,14 @@ public class CloudCondensePocService {
     }
   }
 
-  private String toUrl(DavResource resource) {
+  private String toUrlNoTrailingSlash(DavResource resource) {
     final HttpUrl baseHttpUrl = requireNonNull(HttpUrl.parse(webDavConfig.getUrl()), "URL is invalid");
     final String fullPath = resource.getHref().getPath();
-    return baseHttpUrl.resolve(fullPath).toString();
+    final String resolvedUrl = baseHttpUrl.resolve(fullPath).toString();
+    return resolvedUrl.endsWith("/") ? resolvedUrl.substring(0, resolvedUrl.length() - 1) : resolvedUrl;
   }
 
-  private String toUrlNoTrailingSlash(DavResource resource) {
-    String resolvedUrl = toUrl(resource);
-    if (resolvedUrl.endsWith("/")) {
-      resolvedUrl = resolvedUrl.substring(0, resolvedUrl.length() - 1);
-    }
-    return resolvedUrl;
+  private String toUrlTrailingSlash(DavResource resource) {
+    return toUrlNoTrailingSlash(resource) + "/";
   }
 }
