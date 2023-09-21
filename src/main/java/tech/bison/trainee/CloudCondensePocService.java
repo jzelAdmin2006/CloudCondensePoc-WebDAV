@@ -8,7 +8,6 @@ import static tech.bison.util.sevenzip.SevenZip.SEVEN_ZIP_FILE_ENDING;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -99,8 +98,7 @@ public class CloudCondensePocService {
     }
   }
 
-  private void replaceResource(final Sardine sardine, DavResource resource, final File archive) throws IOException,
-                                                                                                FileNotFoundException {
+  private void replaceResource(final Sardine sardine, DavResource resource, final File archive) throws IOException {
     try (InputStream is = new FileInputStream(archive)) {
       sardine.put(toUrlNoTrailingSlash(resource) + SEVEN_ZIP_FILE_ENDING, is);
     }
